@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <title>とけいパズルランド（JS修正版）</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <style>
+body {
+  margin: 0;
+  font-family: "Comic Sans MS", "Arial Rounded MT", system-ui, sans-serif;
+  background: #f4f0ff;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-height: 100vh;
+  color: #333;
+  overflow-x: hidden;
+}
+
+h1 {
+  font-size: 2.2rem;
+  margin: 1.5rem 0;
+  color: #7a5bff;
+  text-align: center;
+  text-shadow: 3px 3px 0px white;
+}
+
+.panel {
+  background: #ffffff;
+  border-radius: 24px;
+  padding: 1rem;
+  box-shadow:
+    inset 6px 6px 10px rgba(255,255,255,0.9),
+    inset -6px -6px 10px rgba(0,0,0,0.08),
+    6px 6px 12px rgba(0,0,0,0.15);
+  width: 100%;
+  box-sizing: border-box;
+}
+
+#title-screen {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-top: 4rem;
+  width: 100%;
+  gap: 1rem;
+}
+
+.level-btn {
+  width: 80%;
+  padding: 1rem;
+  font-size: 1.2rem;
+  border-radius: 20px;
+  border: none;
+  background: linear-gradient(135deg, #b28bff, #7a5bff);
+  color: white;
+  cursor: pointer;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+  transition: 0.1s;
+}
+.level-btn:active {
+  transform: translateY(2px);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+.game-container {
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  width: 100%;
+  max-width: 480px;
+  padding: 0.5rem 1rem 2rem;
+  box-sizing: border-box;
+}
+
+/* おだい */
+.time-header {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  padding: 0.5rem 0;
+}
+
+.target-time {
+  font-size: 2.2rem;
+  font-weight: 900;
+  text-align: left;
+  color: #ff6b6b;
+  text-shadow: 2px 2px 0px white;
+}
+
+/* 時計盤 */
+.clock-wrapper {
+  position: relative;
+  width: 260px;
+  height: 260px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#clock-svg {
+  width: 260px;
+  height: 260px;
+}
+
+/* 針 */
+.hand {
+  position: absolute;
+  width: 6px;
+  height: 50%;
+  background: #333;
+  top: 50%;
+  left: 50%;
+  transform-origin: 50% 100%;
+  transform: translate(-50%, -100%) rotate(0deg);
+  border-radius: 4px;
+}
+.hand.hour { height: 35%; background: #7a5bff; }
+.hand.minute { height: 45%; background: #ff9f1c; }
+
+/* はてなボックス（時計盤右下） */
+.hint-bottom-right {
+  position: absolute;
+  right: -10px;
+  bottom: -10px;
+  cursor: pointer;
+}
+
+/* ヒント文（はてなボックスのすぐ上） */
+.hint-text {
+  position: absolute;
+  right: -10px;
+  bottom: 45px;
+  background: #ffffff;
+  padding: 6px 10px;
+  border-radius: 12px;
+  font-size: 0.9rem;
+  color: #7a5bff;
+  box-shadow: 0 3px 6px rgba(0,0,0,0.15);
+  line-height: 1.5;
+}
+
+/* ボタン */
+button {
+  border: none;
+  border-radius: 999px;
+  padding: 0.5rem 1rem;
+  font-size: 1rem;
+  cursor: pointer;
+  background: #7a5bff;
+  color: #fff;
+  box-shadow: 0 3px 6px rgba(0,0,0,0.15);
+}
+
+.btn-main {
+  width: 100%;
+  padding: 0.7rem 1rem;
+  font-size: 1.2rem;
+  background: linear-gradient(135deg, #ff9f1c, #ff6b6b);
+}
+
+.controls {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
+  width: 100%;
+}
+
+.control-block {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+/* 正解 → 緑枠 */
+.correct-border {
+  border: 4px solid #4CAF50;
+  box-shadow: 0 0 12px rgba(76, 175, 80, 0.6);
+}
+
+/* 不正解 → 赤枠 */
+.wrong-border {
+  border: 4px solid #ff4d4d;
+  box-shadow: 0 0 12px rgba(255, 77, 77, 0.6);
+}
+
+#fireworks-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.firework {
+  position: absolute;
+  width: 6px;
+  height: 6px;
+  background: radial-gradient(circle, #fff, transparent);
+  border-radius: 50%;
+  animation: explode 700ms ease-out forwards;
+}
+
+@keyframes explode {
+  0% { transform: scale(1); opacity: 1; }
+  100% { transform: scale(8); opacity: 0; }
+}
+
+  </style>
+</head>
+
+<body>
+
+  <!-- スタート画面 -->
+  <div id="title-screen">
+    <h1>とけいパズルランド</h1>
+    <button class="level-btn" id="level1-btn">レベル1（5分刻み）</button>
+    <button class="level-btn" id="level2-btn">レベル2（1分刻み）</button>
+  </div>
+
+  <!-- ゲーム画面 -->
+  <div class="game-container">
+
+    <!-- おだい -->
+    <div class="panel time-header">
+      <div class="target-time">
+        おだい：<span id="target-hour">3</span>じ
+        <span id="target-minute">00</span>分
+      </div>
+    </div>
+
+    <!-- 時計盤 -->
+    <div class="clock-wrapper">
+      <div id="clock-svg">
+
+        <svg id="clock-face" width="260" height="260" viewBox="0 0 260 260">
+          <defs>
+            <radialGradient id="puffyClock" cx="30%" cy="30%" r="80%">
+              <stop offset="0%" stop-color="#ffffff"/>
+              <stop offset="100%" stop-color="#e8e2ff"/>
+            </radialGradient>
+          </defs>
+
+          <circle cx="130" cy="130" r="120"
+                  fill="url(#puffyClock)" stroke="#7a5bff" stroke-width="10"/>
+
+          <g font-size="24" font-weight="900" fill="#000" text-anchor="middle">
+            <text x="130" y="40">12</text>
+            <text x="180" y="50">1</text>
+            <text x="214" y="90">2</text>
+            <text x="227" y="135">3</text>
+            <text x="215" y="185">4</text>
+            <text x="180" y="225">5</text>
+            <text x="130" y="240">6</text>
+            <text x="80"  y="225">7</text>
+            <text x="45"  y="185">8</text>
+            <text x="33"  y="135">9</text>
+            <text x="45"  y="90">10</text>
+            <text x="80"  y="50">11</text>
+          </g>
+        </svg>
+
+      </div>
+
+      <div class="hand hour" id="hour-hand"></div>
+      <div class="hand minute" id="minute-hand"></div>
+
+      <!-- はてなボックス -->
+      <div id="hint-box" class="hint-bottom-right">
+        <svg width="60" height="60" viewBox="0 0 200 90">
+          <rect x="10" y="10" width="180" height="70" rx="20"
+                fill="#ffffff" stroke="#7a5bff" stroke-width="6"/>
+          <text x="100" y="55" font-size="36" text-anchor="middle" fill="#7a5bff">？</text>
+        </svg>
+      </div>
+
+      <!-- ヒント文 -->
+      <div id="hint-text" class="hint-text" style="display:none;">
+        みじかい はり は「じ」<br>
+        ながい はり は「ふん」
+      </div>
+
+    </div>
+
+    <!-- 現在の時間 -->
+    <div class="panel current-time-panel">
+      <div class="current-time">
+        いま：<span id="current-hour">3</span>じ
+        <span id="current-minute">00</span>分
+      </div>
+    </div>
+
+    <!-- ボタン -->
+    <div class="controls" id="minute-controls-lv1">
+      <div class="control-block">
+        <button id="hour-up">＋1じ</button>
+        <button id="hour-down">−1じ</button>
+      </div>
+
+      <div class="control-block">
+        <button id="minute-up">＋5分</button>
+        <button id="minute-down">−5分</button>
+      </div>
+    </div>
+
+    <div class="controls" id="minute-controls-lv2" style="display:none;">
+      <div class="control-block">
+        <button id="min1-up">＋1ふん</button>
+        <button id="min1-down">−1ふん</button>
+      </div>
+    </div>
+
+    <button class="btn-main" id="check-btn">これで いい？</button>
+    <button class="btn-main" id="next-btn" style="display:none;">つぎの もんだいへ</button>
+
+    <button id="end-btn">おわりにする</button>
+
+    <div class="panel">
+      <div>のこりじかん：<span id="time-left">30</span>びょう</div>
+    </div>
+
+  </div>
+
+  <script>
+    let level = 1;
+let targetHour = 3;
+let targetMinute = 0;
+
+let currentHour = 3;
+let currentMinute = 0;
+
+let timeLeft = 30;
+let timerId = null;
+let isAnswering = true;
+
+const titleScreen = document.getElementById("title-screen");
+const gameContainer = document.querySelector(".game-container");
+
+const level1Btn = document.getElementById("level1-btn");
+const level2Btn = document.getElementById("level2-btn");
+
+const hourHand = document.getElementById("hour-hand");
+const minuteHand = document.getElementById("minute-hand");
+
+const targetHourEl = document.getElementById("target-hour");
+const targetMinuteEl = document.getElementById("target-minute");
+
+const currentHourEl = document.getElementById("current-hour");
+const currentMinuteEl = document.getElementById("current-minute");
+
+const minuteControlsLv1 = document.getElementById("minute-controls-lv1");
+const minuteControlsLv2 = document.getElementById("minute-controls-lv2");
+
+const btnHourUp = document.getElementById("hour-up");
+const btnHourDown = document.getElementById("hour-down");
+const btnMinuteUp = document.getElementById("minute-up");
+const btnMinuteDown = document.getElementById("minute-down");
+
+const btnMin1Up = document.getElementById("min1-up");
+const btnMin1Down = document.getElementById("min1-down");
+
+const btnCheck = document.getElementById("check-btn");
+const btnNext = document.getElementById("next-btn");
+const btnEnd = document.getElementById("end-btn");
+
+const timeLeftEl = document.getElementById("time-left");
+
+function updateClockHands() {
+  const hourAngle = ((currentHour % 12) + currentMinute / 60) * 30;
+  const minuteAngle = (currentMinute / 60) * 360;
+
+  hourHand.style.transform = `translate(-50%, -100%) rotate(${hourAngle}deg)`;
+  minuteHand.style.transform = `translate(-50%, -100%) rotate(${minuteAngle}deg)`;
+
+  currentHourEl.textContent = currentHour;
+  currentMinuteEl.textContent = currentMinute.toString().padStart(2, "0");
+}
+
+function generateTarget() {
+  if (level === 1) {
+    targetHour = Math.floor(Math.random() * 12) + 1;
+    targetMinute = Math.floor(Math.random() * 12) * 5;
+  } else {
+    targetHour = Math.floor(Math.random() * 12) + 1;
+    targetMinute = Math.floor(Math.random() * 60);
+  }
+  targetHourEl.textContent = targetHour;
+  targetMinuteEl.textContent = targetMinute.toString().padStart(2, "0");
+}
+
+function randomizeHands() {
+  if (level === 1) {
+    currentMinute = Math.floor(Math.random() * 12) * 5;
+  } else {
+    currentMinute = Math.floor(Math.random() * 60);
+  }
+  currentHour = Math.floor(Math.random() * 12) + 1;
+}
+
+function startTimer() {
+  clearInterval(timerId);
+  timeLeft = 30;
+  timeLeftEl.textContent = timeLeft;
+
+  timerId = setInterval(() => {
+    timeLeft--;
+    timeLeftEl.textContent = timeLeft;
+    if (timeLeft <= 0) {
+      clearInterval(timerId);
+      handleWrong();
+    }
+  }, 1000);
+}
+
+function handleCorrect() {
+  isAnswering = false;
+  btnCheck.style.display = "none";
+  btnNext.style.display = "block";
+  clearInterval(timerId);
+
+  const panel = document.querySelector(".current-time-panel");
+  panel.classList.remove("wrong-border");
+  panel.classList.add("correct-border");
+
+  launchFireworks(); // ← 花火エフェクト
+}
+
+function handleWrong() {
+  // ゲームは止めない（調整できる）
+  isAnswering = true;
+
+  // 「これでいい？」ボタンはそのまま表示
+  btnCheck.style.display = "block";
+  btnNext.style.display = "none";
+
+  // タイマーは止めない（clearIntervalしない）
+
+  // 赤枠をつける
+  const panel = document.querySelector(".current-time-panel");
+  panel.classList.remove("correct-border");
+  panel.classList.add("wrong-border");
+}
+
+function nextQuestion() {
+  isAnswering = true;
+  btnCheck.style.display = "block";
+  btnNext.style.display = "none";
+  generateTarget();
+  randomizeHands();
+  updateClockHands();
+  startTimer();
+
+const panel = document.querySelector(".current-time-panel");
+panel.classList.remove("correct-border", "wrong-border");
+}
+
+function startGame() {
+  titleScreen.style.display = "none";
+  gameContainer.style.display = "flex";
+
+  if (level === 1) {
+    minuteControlsLv1.style.display = "grid";
+    minuteControlsLv2.style.display = "none";
+  } else {
+    minuteControlsLv1.style.display = "grid";
+    minuteControlsLv2.style.display = "grid";
+  }
+
+  nextQuestion();
+}
+
+level1Btn.addEventListener("click", () => {
+  level = 1;
+  startGame();
+});
+
+level2Btn.addEventListener("click", () => {
+  level = 2;
+  startGame();
+});
+
+btnEnd.addEventListener("click", () => {
+  clearInterval(timerId);
+  gameContainer.style.display = "none";
+  titleScreen.style.display = "flex";
+});
+
+btnHourUp.addEventListener("click", () => {
+  if (!isAnswering) return;
+  currentHour = currentHour % 12 + 1;
+  updateClockHands();
+});
+
+btnHourDown.addEventListener("click", () => {
+  if (!isAnswering) return;
+  currentHour = currentHour === 1 ? 12 : currentHour - 1;
+  updateClockHands();
+});
+
+btnMinuteUp.addEventListener("click", () => {
+  if (!isAnswering) return;
+  currentMinute = (currentMinute + 5) % 60;
+  updateClockHands();
+});
+
+btnMinuteDown.addEventListener("click", () => {
+  if (!isAnswering) return;
+  currentMinute = currentMinute === 0 ? 55 : currentMinute - 5;
+  updateClockHands();
+});
+
+if (btnMin1Up) {
+  btnMin1Up.addEventListener("click", () => {
+    if (!isAnswering) return;
+    currentMinute = (currentMinute + 1) % 60;
+    updateClockHands();
+  });
+}
+
+if (btnMin1Down) {
+  btnMin1Down.addEventListener("click", () => {
+    if (!isAnswering) return;
+    currentMinute = currentMinute === 0 ? 59 : currentMinute - 1;
+    updateClockHands();
+  });
+}
+
+btnCheck.addEventListener("click", () => {
+  if (!isAnswering) return;
+
+  // ★ これでいい？ を押したらタイマーをリセット
+  clearInterval(timerId);
+  startTimer();
+
+  if (currentHour === targetHour && currentMinute === targetMinute) {
+    handleCorrect();
+  } else {
+    handleWrong();
+  }
+});
+
+btnNext.addEventListener("click", nextQuestion);
+
+// ▼ はてなボックスのクリックでヒントを表示/非表示 ▼
+const hintBox = document.getElementById("hint-box");
+const hintText = document.getElementById("hint-text");
+
+hintBox.addEventListener("click", () => {
+  hintText.style.display =
+    hintText.style.display === "none" ? "block" : "none";
+});
+
+// 初期状態の針
+updateClockHands();
+
+function launchFireworks() {
+  const container = document.getElementById("fireworks-container");
+
+  for (let i = 0; i < 20; i++) {
+    const fw = document.createElement("div");
+    fw.classList.add("firework");
+
+    fw.style.left = Math.random() * 100 + "vw";
+    fw.style.top = Math.random() * 100 + "vh";
+    fw.style.background = `radial-gradient(circle, hsl(${Math.random()*360}, 90%, 60%), transparent)`;
+
+    container.appendChild(fw);
+
+    setTimeout(() => fw.remove(), 700);
+  }
+}
+
+  </script>
+
+<div id="fireworks-container"></div>
+
+</body>
+</html>
