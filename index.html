@@ -79,14 +79,15 @@ h1 {
 .time-header {
   display: flex;
   align-items: center;
-  justify-content: flex-start;
+  justify-content: center;
   padding: 0.5rem 0;
+　position: relative;
 }
 
 .target-time {
   font-size: 2.2rem;
   font-weight: 900;
-  text-align: left;
+  text-align: center;
   color: #ff6b6b;
   text-shadow: 2px 2px 0px white;
 }
@@ -163,10 +164,8 @@ button {
 }
 
 .controls {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
+  display: flex;
   gap: 0.5rem;
-  width: 100%;
 }
 
 .control-block {
@@ -212,6 +211,137 @@ button {
   100% { transform: scale(8); opacity: 0; }
 }
 
+.current-time-panel {
+  position: absolute;
+  top: 0;
+  left: 0;
+
+  /* ★ 文章に合わせて自然に広がる */
+  width: max-content;
+
+  /* ★ バランスよく見える余白 */
+  padding: 6px 2.5px;
+
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.16);
+
+  font-size: 18px;
+
+  /* ★ 中央寄せだけど窮屈じゃない */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+
+  white-space: nowrap;
+  line-height: 1.3;   /* ← 読みやすさUP */
+}
+
+.current-time-toggle {
+  position: relative;
+  width: 135px;
+  height: 40px;
+  background: #fff;
+  border: 2px solid #aaa;
+  border-radius: 8px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  cursor: pointer;
+  user-select: none;
+  font-size: 20px;
+  overflow: hidden; /* ← これが超重要！ */
+}
+
+.toggle-label {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.fade-in {
+  animation: fadeIn 0.25s ease forwards;
+}
+
+.fade-out {
+  animation: fadeOut 0.25s ease forwards;
+}
+
+@keyframes fadeIn {
+  0% { opacity: 0; transform: translateY(6px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeOut {
+  0% { opacity: 1; transform: translateY(0); }
+  100% { opacity: 0; transform: translateY(-6px); }
+}
+
+.clock-wrapper.correct {
+  border: 6px solid #4CAF50; /* 緑 */
+  border-radius: 999px;
+  padding: 0.5px;
+  animation: pop 0.3s ease-out;
+}
+
+@keyframes pop {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+  100% { transform: scale(1); }
+}
+
+.clock-wrapper.wrong {
+  border: 6px solid #E53935; /* 赤 */
+  border-radius: 999px;
+  padding: 0.5px;
+}
+
+@keyframes shake {
+  0% { transform: translateX(0); }
+  25% { transform: translateX(-6px); }
+  50% { transform: translateX(6px); }
+  75% { transform: translateX(-6px); }
+  100% { transform: translateX(0); }
+}
+
+.clock-wrapper.wrong {
+  animation: shake 0.25s ease;
+}
+
+/* タイマー全体を非表示 */
+.panel:last-of-type {
+  display: none;
+}
+
+/* 各ブロック（＋と−）を縦並びに */
+.control-block {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* ボタンの大きさを揃える（任意） */
+.controls button {
+  width: 100px;
+  padding: 10px 0;
+  font-size: 18px;
+  border-radius: 12px;
+}
+
+html, body {
+  touch-action: manipulation;
+}
+
+.hand {
+  pointer-events: auto;
+}
+
+.minute-tick {
+  stroke-linecap: round;
+}
+
   </style>
 </head>
 
@@ -220,8 +350,8 @@ button {
   <!-- スタート画面 -->
   <div id="title-screen">
     <h1>とけいパズルランド</h1>
-    <button class="level-btn" id="level1-btn">レベル1（5分刻み）</button>
-    <button class="level-btn" id="level2-btn">レベル2（1分刻み）</button>
+    <button class="level-btn" id="level1-btn">レベル1</button>
+    <button class="level-btn" id="level2-btn">レベル2</button>
   </div>
 
   <!-- ゲーム画面 -->
@@ -283,38 +413,40 @@ button {
       <!-- ヒント文 -->
       <div id="hint-text" class="hint-text" style="display:none;">
         みじかい はり は「じ」<br>
-        ながい はり は「ふん」
+        ながい はり は「ふん（ぷん）」
       </div>
 
     </div>
 
     <!-- 現在の時間 -->
-    <div class="panel current-time-panel">
-      <div class="current-time">
-        いま：<span id="current-hour">3</span>じ
-        <span id="current-minute">00</span>分
-      </div>
+    <div id="current-time-toggle" class="current-time-toggle">
+  <span class="toggle-label">いまなんじ？</span>
+
+  <div id="current-time-panel" class="current-time-panel" style="display:none;">
+    <div class="current-time">
+      いま：<span id="current-hour"></span>じ
+      <span id="current-minute"></span>分
     </div>
+  </div>
+</div>
 
     <!-- ボタン -->
-    <div class="controls" id="minute-controls-lv1">
-      <div class="control-block">
-        <button id="hour-up">＋1じ</button>
-        <button id="hour-down">−1じ</button>
-      </div>
+    <div class="controls" id="minute-controls">
+  <div class="control-block">
+    <button id="hour-up">＋1じ</button>
+    <button id="hour-down">−1じ</button>
+  </div>
 
-      <div class="control-block">
-        <button id="minute-up">＋5分</button>
-        <button id="minute-down">−5分</button>
-      </div>
-    </div>
+  <div class="control-block">
+    <button id="minute-up">＋5分</button>
+    <button id="minute-down">−5分</button>
+  </div>
 
-    <div class="controls" id="minute-controls-lv2" style="display:none;">
-      <div class="control-block">
-        <button id="min1-up">＋1ふん</button>
-        <button id="min1-down">−1ふん</button>
-      </div>
-    </div>
+  <div class="control-block" id="lv2-block" style="display:none;">
+    <button id="min1-up">＋1分</button>
+    <button id="min1-down">−1分</button>
+  </div>
+</div>
 
     <button class="btn-main" id="check-btn">これで いい？</button>
     <button class="btn-main" id="next-btn" style="display:none;">つぎの もんだいへ</button>
@@ -354,9 +486,6 @@ const targetMinuteEl = document.getElementById("target-minute");
 const currentHourEl = document.getElementById("current-hour");
 const currentMinuteEl = document.getElementById("current-minute");
 
-const minuteControlsLv1 = document.getElementById("minute-controls-lv1");
-const minuteControlsLv2 = document.getElementById("minute-controls-lv2");
-
 const btnHourUp = document.getElementById("hour-up");
 const btnHourDown = document.getElementById("hour-down");
 const btnMinuteUp = document.getElementById("minute-up");
@@ -372,7 +501,9 @@ const btnEnd = document.getElementById("end-btn");
 const timeLeftEl = document.getElementById("time-left");
 
 function updateClockHands() {
-  const hourAngle = ((currentHour % 12) + currentMinute / 60) * 30;
+  if (currentMinute === 60) currentMinute = 0;
+
+  const hourAngle = (currentHour % 12) * 30;
   const minuteAngle = (currentMinute / 60) * 360;
 
   hourHand.style.transform = `translate(-50%, -100%) rotate(${hourAngle}deg)`;
@@ -380,6 +511,90 @@ function updateClockHands() {
 
   currentHourEl.textContent = currentHour;
   currentMinuteEl.textContent = currentMinute.toString().padStart(2, "0");
+}
+
+// ▼ どこかを触ったらヒントと現在時間を閉じる ▼
+document.addEventListener("pointerdown", (e) => {
+  if (e.target.closest("#hint-box") || e.target.closest("#hint-text")) return;
+  if (e.target.closest("#current-time-toggle")) return;
+  if (e.target.closest("#current-time-panel")) return;
+
+  hintText.style.display = "none";
+  currentTimePanel.style.display = "none";
+
+  // ★ 追加：ボタン文字を戻す
+  toggleLabel.classList.remove("fade-out");
+  toggleLabel.classList.add("fade-in");
+});
+
+/* ▼▼▼ ここから下にタッチ操作のコードを追加 ▼▼▼ */
+
+// 時計の中心を取る関数
+function getClockCenter() {
+  const rect = document.querySelector(".clock-wrapper").getBoundingClientRect();
+  return {
+    x: rect.left + rect.width / 2,
+    y: rect.top + rect.height / 2
+  };
+}
+
+// ▼ 時針のタッチ操作
+const hourHandEl = document.querySelector(".hand.hour");
+
+hourHandEl.addEventListener("pointerdown", (e) => {
+  e.preventDefault();
+  window.addEventListener("pointermove", onHourDrag);
+  window.addEventListener("pointerup", stopHourDrag);
+});
+
+function onHourDrag(e) {
+  const center = getClockCenter();
+  const angle = Math.atan2(e.clientY - center.y, e.clientX - center.x);
+  const deg = angle * (180 / Math.PI) + 90;
+
+  let hour = Math.round((deg % 360) / 30); // 360° / 12時間 = 30°ずつ
+  if (hour < 0) hour += 12;
+
+  currentHour = hour;
+  updateClockHands();
+}
+
+function stopHourDrag() {
+  window.removeEventListener("pointermove", onHourDrag);
+  window.removeEventListener("pointerup", stopHourDrag);
+}
+
+// 分針のタッチ操作
+const minuteHandEl = document.querySelector(".hand.minute");
+
+minuteHandEl.addEventListener("pointerdown", (e) => {
+  e.preventDefault();
+  window.addEventListener("pointermove", onMinuteDrag);
+  window.addEventListener("pointerup", stopMinuteDrag);
+});
+
+function onMinuteDrag(e) {
+  const center = getClockCenter();
+  const angle = Math.atan2(e.clientY - center.y, e.clientX - center.x);
+  const deg = angle * (180 / Math.PI) + 90;
+
+  let minute = Math.round((deg % 360) / 6);
+
+  if (minute < 0) minute += 60;
+ if (minute === 60) minute = 0;
+
+  // ★ レベル1は5分刻みに丸める（正しい変数名に修正）
+  if (level === 1) {
+    minute = Math.round(minute / 5) * 5;
+  }
+
+  currentMinute = minute;
+  updateClockHands();
+}
+
+function stopMinuteDrag() {
+  window.removeEventListener("pointermove", onMinuteDrag);
+  window.removeEventListener("pointerup", stopMinuteDrag);
 }
 
 function generateTarget() {
@@ -404,6 +619,9 @@ function randomizeHands() {
 }
 
 function startTimer() {
+  // ▼▼▼ タイマー機能は今オフにしておく ▼▼▼
+
+  /*
   clearInterval(timerId);
   timeLeft = 30;
   timeLeftEl.textContent = timeLeft;
@@ -416,38 +634,47 @@ function startTimer() {
       handleWrong();
     }
   }, 1000);
+  */
+
+  // ▲▲▲ 必要になったらここを戻すだけ ▲▲▲
 }
 
 function handleCorrect() {
   isAnswering = false;
+
+  // 時計盤の枠を緑に
+  clockWrapper.classList.remove("wrong");
+  clockWrapper.classList.add("correct");
+
+  // チェックボタンを隠して次へボタンを出す
   btnCheck.style.display = "none";
   btnNext.style.display = "block";
+
+  // タイマー停止
   clearInterval(timerId);
 
-  const panel = document.querySelector(".current-time-panel");
-  panel.classList.remove("wrong-border");
-  panel.classList.add("correct-border");
-
-  launchFireworks(); // ← 花火エフェクト
+  // 花火
+  launchFireworks();
 }
 
 function handleWrong() {
-  // ゲームは止めない（調整できる）
+  // ゲームは止めない
   isAnswering = true;
 
-  // 「これでいい？」ボタンはそのまま表示
+  // 時計盤の枠を赤に
+  clockWrapper.classList.remove("correct");
+  clockWrapper.classList.add("wrong");
+
+  // チェックボタンはそのまま
   btnCheck.style.display = "block";
   btnNext.style.display = "none";
-
-  // タイマーは止めない（clearIntervalしない）
-
-  // 赤枠をつける
-  const panel = document.querySelector(".current-time-panel");
-  panel.classList.remove("correct-border");
-  panel.classList.add("wrong-border");
 }
 
 function nextQuestion() {
+  // 時計盤の枠をリセット
+  clockWrapper.classList.remove("correct", "wrong");
+
+  // ここから元の処理
   isAnswering = true;
   btnCheck.style.display = "block";
   btnNext.style.display = "none";
@@ -455,21 +682,20 @@ function nextQuestion() {
   randomizeHands();
   updateClockHands();
   startTimer();
-
-const panel = document.querySelector(".current-time-panel");
-panel.classList.remove("correct-border", "wrong-border");
 }
 
 function startGame() {
   titleScreen.style.display = "none";
   gameContainer.style.display = "flex";
 
+  createMinuteTicks();
+
+  const lv2Block = document.getElementById("lv2-block");
+
   if (level === 1) {
-    minuteControlsLv1.style.display = "grid";
-    minuteControlsLv2.style.display = "none";
+    lv2Block.style.display = "none";   // 1分ボタンを隠す
   } else {
-    minuteControlsLv1.style.display = "grid";
-    minuteControlsLv2.style.display = "grid";
+    lv2Block.style.display = "flex";   // 1分ボタンを表示
   }
 
   nextQuestion();
@@ -534,13 +760,13 @@ if (btnMin1Down) {
 btnCheck.addEventListener("click", () => {
   if (!isAnswering) return;
 
-  // ★ これでいい？ を押したらタイマーをリセット
-  clearInterval(timerId);
-  startTimer();
-
+  // 正解判定
   if (currentHour === targetHour && currentMinute === targetMinute) {
-    handleCorrect();
+    handleCorrect(); // タイマー停止はここで行う
   } else {
+    // 不正解のときだけタイマーをリセット
+    clearInterval(timerId);
+    startTimer();
     handleWrong();
   }
 });
@@ -559,6 +785,38 @@ hintBox.addEventListener("click", () => {
 // 初期状態の針
 updateClockHands();
 
+// ▼ 現在の時間の表示/非表示 ▼
+const currentTimeToggle = document.getElementById("current-time-toggle");
+const currentTimePanel = document.getElementById("current-time-panel");
+const toggleLabel = document.querySelector(".toggle-label");
+
+currentTimeToggle.addEventListener("click", () => {
+  if (currentTimePanel.style.display === "none") {
+    // ボタン文字をフェードアウト
+    toggleLabel.classList.remove("fade-in");
+    toggleLabel.classList.add("fade-out");
+
+    // パネルをフェードイン
+    currentTimePanel.style.display = "flex";
+    currentTimePanel.classList.remove("fade-out");
+    currentTimePanel.classList.add("fade-in");
+  } else {
+    // パネルをフェードアウト
+    currentTimePanel.classList.remove("fade-in");
+    currentTimePanel.classList.add("fade-out");
+
+    // ボタン文字をフェードイン
+    toggleLabel.classList.remove("fade-out");
+    toggleLabel.classList.add("fade-in");
+
+    setTimeout(() => {
+      currentTimePanel.style.display = "none";
+    }, 250);
+  }
+});
+
+const clockWrapper = document.querySelector(".clock-wrapper");
+
 function launchFireworks() {
   const container = document.getElementById("fireworks-container");
 
@@ -575,6 +833,7 @@ function launchFireworks() {
     setTimeout(() => fw.remove(), 700);
   }
 }
+
 
   </script>
 
