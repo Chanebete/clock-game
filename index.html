@@ -53,7 +53,7 @@ h1 {
   font-size: 1.2rem;
   border-radius: 20px;
   border: none;
-  background: linear-gradient(135deg, #b28bff, #7a5bff);
+  background: linear-gradient(135deg, #ff8a7a, #ff6b6b);
   color: white;
   cursor: pointer;
   box-shadow: 0 4px 8px rgba(0,0,0,0.2);
@@ -157,15 +157,17 @@ button {
 }
 
 .btn-main {
-  width: 100%;
+  width: 70%;
   padding: 0.7rem 1rem;
-  font-size: 1.2rem;
-  background: linear-gradient(135deg, #ff9f1c, #ff6b6b);
+  font-size: 1.5rem;
+  background: linear-gradient(135deg, #5ee6c8, #00c896);
 }
 
 .controls {
   display: flex;
-  gap: 0.5rem;
+  flex-direction: row;
+  justify-content: center;
+  gap: 1rem;
 }
 
 .control-block {
@@ -322,20 +324,76 @@ button {
   gap: 10px;
 }
 
-/* ボタンの大きさを揃える（任意） */
-.controls button {
-  width: 100px;
-  padding: 10px 0;
-  font-size: 18px;
-  border-radius: 12px;
-}
-
 html, body {
   touch-action: manipulation;
 }
 
 .hand {
   pointer-events: auto;
+}
+
+.minute-tick {
+  stroke-linecap: round;
+}
+
+html, body {
+  height: 100%;
+  overflow: hidden; /* ← スクロール禁止 */
+  touch-action: manipulation; /* ← スマホの誤動作防止（ズームやスクロール抑制） */
+}
+
+.game-container {
+  height: 100vh;
+  overflow: hidden;
+}
+
+body {
+  overscroll-behavior: none;
+}
+
+.minute-btn {
+  background: #ff9f1c;   /* 分針と同じ色 */
+  color: #fff;
+  width: 100px;
+  padding: 10px 0;
+  font-size: 18px;
+  border-radius: 12px;
+  border: none;
+  box-shadow: 0 3px 6px rgba(0,0,0,0.15);
+  cursor: pointer;
+}
+
+.minute-btn:active {
+  transform: translateY(2px);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+}
+
+.hour-btn {
+  background: #7a5bff;   /* じボタンは紫でOK？（必要なら色変えられる） */
+  color: #fff;
+  width: 100px;
+  padding: 10px 0;
+  font-size: 18px;
+  border-radius: 12px;
+  border: none;
+  box-shadow: 0 3px 6px rgba(0,0,0,0.15);
+  cursor: pointer;
+}
+
+.hour-btn:active {
+  transform: translateY(2px);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+}
+
+#end-btn {
+  background: linear-gradient(135deg, #ff7a7a, #ff4d6d);
+  color: #fff;
+  padding: 0.7rem 1rem;
+  font-size: 1.2rem;
+  border-radius: 12px;
+  border: none;
+  box-shadow: 0 3px 6px rgba(0,0,0,0.15);
+  cursor: pointer;
 }
 
   </style>
@@ -388,7 +446,7 @@ html, body {
             <text x="45"  y="185">8</text>
             <text x="33"  y="135">9</text>
             <text x="45"  y="90">10</text>
-            <text x="80"  y="50">11</text>
+            <text x="80"  y="52">11</text>
           </g>
         </svg>
 
@@ -426,28 +484,30 @@ html, body {
   </div>
 </div>
 
-    <!-- ボタン -->
-    <div class="controls" id="minute-controls">
+   <!-- ボタン（じ・ふん） -->
+<div class="controls" id="minute-controls">
+
   <div class="control-block">
-    <button id="hour-up">＋1じ</button>
-    <button id="hour-down">−1じ</button>
+   <button id="hour-up" class="hour-btn">＋1じ</button>
+   <button id="hour-down" class="hour-btn">−1じ</button>
   </div>
 
   <div class="control-block">
-    <button id="minute-up">＋5分</button>
-    <button id="minute-down">−5分</button>
+    <button id="minute-up" class="minute-btn">＋5分</button>
+    <button id="minute-down" class="minute-btn">−5分</button>
   </div>
 
   <div class="control-block" id="lv2-block" style="display:none;">
-    <button id="min1-up">＋1分</button>
-    <button id="min1-down">−1分</button>
+    <button id="min1-up" class="minute-btn">＋1分</button>
+    <button id="min1-down" class="minute-btn">−1分</button>
   </div>
+
 </div>
 
-    <button class="btn-main" id="check-btn">これで いい？</button>
-    <button class="btn-main" id="next-btn" style="display:none;">つぎの もんだいへ</button>
-
-    <button id="end-btn">おわりにする</button>
+<!-- ✔ ここから下は controls の外に出す！ -->
+<button class="btn-main" id="check-btn">これで いい？</button>
+<button class="btn-main" id="next-btn" style="display:none;">つぎの もんだいへ</button>
+<button id="end-btn">おわりにする</button>
 
     <div class="panel">
       <div>のこりじかん：<span id="time-left">30</span>びょう</div>
@@ -505,7 +565,8 @@ function updateClockHands() {
   hourHand.style.transform = `translate(-50%, -100%) rotate(${hourAngle}deg)`;
   minuteHand.style.transform = `translate(-50%, -100%) rotate(${minuteAngle}deg)`;
 
-  currentHourEl.textContent = currentHour;
+    const displayHour = currentHour === 0 ? 12 : currentHour;
+  currentHourEl.textContent = displayHour;
   currentMinuteEl.textContent = currentMinute.toString().padStart(2, "0");
 }
 
@@ -654,14 +715,12 @@ function handleCorrect() {
 }
 
 function handleWrong() {
-  // ゲームは止めない
   isAnswering = true;
 
-  // 時計盤の枠を赤に
-  clockWrapper.classList.remove("correct");
+  clockWrapper.classList.remove("correct", "wrong");
+  void clockWrapper.offsetWidth; // ★ アニメーションをリセット
   clockWrapper.classList.add("wrong");
 
-  // チェックボタンはそのまま
   btnCheck.style.display = "block";
   btnNext.style.display = "none";
 }
@@ -680,18 +739,61 @@ function nextQuestion() {
   startTimer();
 }
 
+function createMinuteTicks() {
+  const svg = document.getElementById("clock-face");
+  if (!svg) return;
+
+  svg.querySelectorAll(".minute-tick").forEach(t => t.remove());
+
+  const cx = 130;
+  const cy = 130;
+  const outer = 120;
+
+  const longInner = 115;  // 長い線（5分刻み）
+  const shortInner = 115; // 短い線（1分刻み）
+
+  for (let i = 0; i < 60; i++) {
+    const tick = document.createElementNS("http://www.w3.org/2000/svg", "line");
+    tick.classList.add("minute-tick");
+
+    const angle = (i * 6) * Math.PI / 180;
+
+    const isLong = (i % 5 === 0);
+    const inner = isLong ? longInner : shortInner;
+
+    tick.setAttribute("x1", cx + Math.sin(angle) * outer);
+    tick.setAttribute("y1", cy - Math.cos(angle) * outer);
+    tick.setAttribute("x2", cx + Math.sin(angle) * inner);
+    tick.setAttribute("y2", cy - Math.cos(angle) * inner);
+
+    tick.setAttribute("stroke", "#333");
+    tick.setAttribute("stroke-width", isLong ? 3 : 1);
+
+    // ★ 長い線と短い線を区別
+    tick.classList.add(isLong ? "tick-long" : "tick-short");
+
+    svg.appendChild(tick);
+  }
+}
+
 function startGame() {
   titleScreen.style.display = "none";
   gameContainer.style.display = "flex";
 
-  createMinuteTicks();
-
   const lv2Block = document.getElementById("lv2-block");
+  const svg = document.getElementById("clock-face");
 
   if (level === 1) {
-    lv2Block.style.display = "none";   // 1分ボタンを隠す
+    lv2Block.style.display = "none";
+
+    createMinuteTicks(); // いったん全部作る
+
+    // ★ レベル1は短い線だけ削除
+    svg.querySelectorAll(".tick-short").forEach(t => t.remove());
+
   } else {
-    lv2Block.style.display = "flex";   // 1分ボタンを表示
+    lv2Block.style.display = "flex";
+    createMinuteTicks(); // レベル2は全部表示
   }
 
   nextQuestion();
@@ -707,8 +809,24 @@ level2Btn.addEventListener("click", () => {
   startGame();
 });
 
-btnEnd.addEventListener("click", () => {
+function resetGameState() {
+  // 枠の色リセット
+  clockWrapper.classList.remove("correct", "wrong");
+
+  // 時刻を初期値に戻す（ここでは 3:00 にしてたければ 3,0 でもOK）
+  currentHour = 3;
+  currentMinute = 0;
+  updateClockHands();
+
+  // 回答受付状態をリセット
+  isAnswering = true;
+
+  // タイマーも念のため止める
   clearInterval(timerId);
+}
+
+btnEnd.addEventListener("click", () => {
+  resetGameState();
   gameContainer.style.display = "none";
   titleScreen.style.display = "flex";
 });
@@ -756,11 +874,11 @@ if (btnMin1Down) {
 btnCheck.addEventListener("click", () => {
   if (!isAnswering) return;
 
-  // 正解判定
-  if (currentHour === targetHour && currentMinute === targetMinute) {
-    handleCorrect(); // タイマー停止はここで行う
+  const normalizedHour = currentHour === 0 ? 12 : currentHour;
+
+  if (normalizedHour === targetHour && currentMinute === targetMinute) {
+    handleCorrect();
   } else {
-    // 不正解のときだけタイマーをリセット
     clearInterval(timerId);
     startTimer();
     handleWrong();
